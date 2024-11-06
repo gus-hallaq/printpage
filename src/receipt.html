@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .receipt {
+            border-collapse: collapse;
+            max-width: 80%;
+            font-family: sans-serif;
+        }
+
+        .receipt td {
+            padding: .5em;
+        }
+
+        .receipt tr:nth-child(even) {
+            border: 1px solid #333;
+            border-inline: none;
+            background: #ddd;
+        }
+
+        .receipt tr:nth-child(odd) {
+            background: #fff
+        }
+
+        .header-Uprice,
+        .item-Uprice,
+        .header-qty,
+        .item-qty {
+            text-align: center
+        }
+
+        .total {
+            border-bottom: 3px double #000
+        }
+    </style>
+</head>
+
+<body>
+    <table class="receipt">
+        <tr class="table-headers">
+            <td class="header-id">#</td>
+            <td class="header-desc">Item Description</td>
+            <td class="header-Uprice">Unit Price</td>
+            <td class="header-qty">Qty</td>
+            <td class="header-price">Price</td>
+        </tr>
+        <tr class="item" id="1">
+            <td class="item-id">1</td>
+            <td class="item-desc">Dummy Item1</td>
+            <td class="item-Uprice">200$</td>
+            <td class="item-qty">1</td>
+            <td class="item-price">200$</td>
+        </tr>
+        <tr class="item" id="2">
+            <td class="item-id">2</td>
+            <td class="item-desc">Dummy Item2</td>
+            <td class="item-Uprice">75$</td>
+            <td class="item-qty">1</td>
+            <td class="item-price">75$</td>
+        </tr>
+        <tr class="item" id="3">
+            <td class="item-id">3</td>
+            <td class="item-desc">Dummy Item3</td>
+            <td class="item-Uprice">100$</td>
+            <td class="item-qty">2</td>
+            <td class="item-price">200$</td>
+        </tr>
+        <tr class="total">
+            <td>Total</td>
+            <td>
+            <td>
+            <td>
+            <td>475$</td>
+        </tr>
+    </table>
+</body>
+
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+    <!-- <iframe id="myFrame" src="/receipt.html"></iframe> -->
+
+    <p>Click the button to display the value of the src attribute in the iframe.</p>
+
+    <button onclick="Printing()">Try it</button>
+
+    <button onclick="requestDevice()">Request device</button><br><br>
+    <button id="request-device">Printer connection</button>
+    <button id="device"></button>
+
+    <p id="demo"></p>
+
+    <script>
+        let device;
+        let button = document.getElementById('request-device');
+        button.addEventListener('click', async () => {
+
+            let usbDeviceProperties = { vendorId: 1208, productId: 3624 };
+            try {
+                device = await navigator.usb.requestDevice({ filters: [] });
+                // device_json = JSON.stringify(device);
+                // localStorage.setItem("my_printer", device_json);
+                // console.log(device_json);
+                // console.log(device);
+                const elem = document.querySelector('#device');
+                elem.textContent = `Print with '${device.productName}'`;
+                elem.onclick = () => testPrint(device);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+        // function setPrint() {
+        //     const closePrint = () => {
+        //         document.body.removeChild(this);
+        //     };
+        //     this.contentWindow.onbeforeunload = closePrint;
+        //     this.contentWindow.onafterprint = closePrint;
+        //     this.contentWindow.print();
+        // }
+        // async function requestDevice() {
+        //     try {
+        //         const device = await navigator.usb.requestDevice({ filters: [] });
+        //         chrome.storage.local.set({ "my_printer": event.device }, () => {
+        //             console.log("Device saved");
+        //         });
+        //         const elem = document.querySelector('#device');
+        //         elem.textContent = `Print with '${device.productName}'`;
+        //         elem.onclick = () => testPrint(device);
+        //     } catch (e) {
+        //         console.error(e);
+        //     }
+        // }
+        function printText(text) {
+            return new Uint8Array(text.split('').map(char => char.charCodeAt(0)))
+        }
+        function printLine(text) {
+            var esc = '\x1B'; //ESC byte in hex notation
+            var newLine = '\x0A'; //LF byte in hex notation
+
+            var cmds = esc + "@"; //Initializes the printer (ESC @)
+            cmds += esc + '!' + '\x38'; //Emphasized + Double-height + Double-width mode selected (ESC ! (8 + 16 + 32)) 56 dec => 38 hex
+            cmds += 'BEST DEAL STORES'; //text to print
+            cmds += newLine + newLine;
+            cmds += esc + '!' + '\x00'; //Character font A selected (ESC ! 0)
+            cmds += 'COOKIES                   5.00';
+            cmds += newLine;
+            cmds += 'MILK 65 Fl oz             3.78';
+            cmds += newLine + newLine;
+            cmds += 'SUBTOTAL                  8.78';
+            cmds += newLine;
+            cmds += 'TAX 5%                    0.44';
+            cmds += newLine;
+            cmds += 'TOTAL                     9.22';
+            cmds += newLine;
+            cmds += 'CASH TEND                10.00';
+            cmds += newLine;
+            cmds += 'CASH DUE                  0.78';
+            cmds += newLine + newLine;
+            cmds += esc + '!' + '\x18'; //Emphasized + Double-height mode selected (ESC ! (16 + 8)) 24 dec => 18 hex
+            cmds += '# ITEMS SOLD 2';
+            cmds += esc + '!' + '\x00'; //Character font A selected (ESC ! 0)
+            cmds += newLine + newLine;
+            cmds += '11/03/13  19:53:17';
+            cmds += newLine + newLine;
+            cmds += newLine + newLine;
+            cmds += newLine + newLine;
+            cmds += esc + 'm'
+
+            return new Uint8Array(cmds.split('').map(char => char.charCodeAt(0)))
+        }
+
+        async function testPrint(device) {
+            // if (device.opened === false) {
+            //     device = JSON.parse(localStorage.getItem("my_printer"));
+            //     console.log(device);
+            // }
+
+            await device.open();
+            await device.selectConfiguration(1);
+            await device.claimInterface(0);
+            text = printLine();
+            await device.transferOut(
+                device.configuration.interfaces[0].alternate.endpoints.find(obj => obj.direction === 'out').endpointNumber,
+                text,
+            );
+
+            await device.close();
+        }
+
+        navigator.usb.addEventListener("connect", (event) => {
+            device = event.device;
+        });
+    </script>
+
+</body>
+
+</html>
