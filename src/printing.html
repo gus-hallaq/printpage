@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+    <button id="print Bank receipt" onclick="printBankReceipt()"></button>
+    <button id="print Client receipt" onclick="printClientReceipt()"></button>
+
+
+    <script>
+
+
+
+        let ESC = '\x1B';
+        let GS = '\x1D';
+        let commands = {
+            INIT: '\x1B\x40',           // Init the printer
+            FEED_LINE: '\x0A',          // Line feed
+            CUT: '\x1D\x56\x00',        // Full cut
+            CUT_PARTIAL: '\x1D\x56\x01', // Partial cut
+
+            // Text formatting
+            BOLD_ON: '\x1B\x45\x01',
+            BOLD_OFF: '\x1B\x45\x00',
+            UNDERLINE_ON: '\x1B\x2D\x01',
+            UNDERLINE_OFF: '\x1B\x2D\x00',
+
+            // Text size
+            NORMAL_SIZE: '\x1D\x21\x00',
+            DOUBLE_HEIGHT: '\x1D\x21\x01',
+            DOUBLE_WIDTH: '\x1D\x21\x10',
+            DOUBLE_SIZE: '\x1D\x21\x11',
+
+            // Text alignment
+            ALIGN_LEFT: '\x1B\x61\x00',
+            ALIGN_CENTER: '\x1B\x61\x01',
+            ALIGN_RIGHT: '\x1B\x61\x02'
+        };
+
+
+        // Create receipt content with ESC/POS commands
+        function buildBankReceipt(orderData) {
+            let receipt = '';
+
+            // Initialize printer
+            receipt += commands.INIT;
+
+            // Header - Store name (centered, double size)
+            receipt += commands.ALIGN_CENTER;
+            receipt += commands.DOUBLE_SIZE;
+            receipt += commands.BOLD_ON;
+            receipt += orderData.storeName + '\n';
+            receipt += commands.BOLD_OFF;
+            receipt += commands.NORMAL_SIZE;
+
+            // Store address (centered, normal size)
+            receipt += orderData.address + '\n';
+            receipt += orderData.phone + '\n';
+            receipt += commands.FEED_LINE;
+
+            // Date and receipt number (left aligned)
+            receipt += commands.ALIGN_LEFT;
+            receipt += 'Date: ' + new Date().toLocaleDateString() + '\n';
+            receipt += 'Time: ' + new Date().toLocaleTimeString() + '\n';
+            receipt += 'Receipt #: ' + orderData.receiptNumber + '\n';
+            receipt += printLine('-', 48) + '\n';
+
+            // Items header
+            receipt += leftPad('Item', 20) + rightPad('Qty', 8) + rightPad('Price', 10) + rightPad('Total', 10) + '\n';
+            receipt += printLine('-', 48) + '\n';
+
+            // Items
+            let subtotal = 0;
+            orderData.items.forEach(item => {
+                const total = item.quantity * item.price;
+                subtotal += total;
+
+                receipt += leftPad(item.name, 20) +
+                    rightPad(item.quantity.toString(), 8) +
+                    rightPad('$' + item.price.toFixed(2), 10) +
+                    rightPad('$' + total.toFixed(2), 10) + '\n';
+            });
+
+            receipt += printLine('-', 48) + '\n';
+
+            // Totals (right aligned)
+            receipt += commands.ALIGN_RIGHT;
+            receipt += 'Subtotal: $' + subtotal.toFixed(2) + '\n';
+            receipt += 'Tax: $' + orderData.tax.toFixed(2) + '\n';
+            receipt += commands.BOLD_ON;
+            receipt += 'TOTAL: $' + (subtotal + orderData.tax).toFixed(2) + '\n';
+            receipt += commands.BOLD_OFF;
+            receipt += commands.FEED_LINE;
+
+            // Payment method (left aligned)
+            receipt += commands.ALIGN_LEFT;
+            receipt += 'Payment: ' + orderData.paymentMethod + '\n';
+            if (orderData.change > 0) {
+                receipt += 'Change: $' + orderData.change.toFixed(2) + '\n';
+            }
+            receipt += commands.FEED_LINE;
+
+            // Footer (centered)
+            receipt += commands.ALIGN_CENTER;
+            receipt += 'Thank you for your business!\n';
+            receipt += 'Please come again\n';
+            receipt += commands.FEED_LINE;
+
+            // QR Code (optional - if printer supports it)
+            if (orderData.qrData) {
+                receipt += generateQRCode(orderData.qrData);
+            }
+
+            // Cut paper
+            receipt += commands.FEED_LINE;
+            receipt += commands.CUT;
+
+            return receipt;
+        }
+
+        function printLine(char, length) {
+            return char.repeat(length);
+        }
+
+        function leftPad(text, width) {
+            return text.substring(0, width).padEnd(width, ' ');
+        }
+
+        function rightPad(text, width) {
+            return text.substring(0, width).padStart(width, ' ');
+        }
+
+
+        // function buildBankReceipt() {
+        //     let json_data = {
+        //         "header": {
+        //             "line1": "Nour - Bureau de Change",
+        //             "line2": "1805 Rue Sauvé Ouest - Suite 105A",
+        //             "line3": "Montreal, QUEBEC, H4N3B8, CA",
+        //             "line4": "(514) 334-6502",
+        //             "line5": "www.nourexchange.ca",
+        //         },
+        //         "body": {
+        //             "section1": {
+        //                 "line1": {"left": "Bank Receipt", "right": "SAINV276257", "font_size": "l", "font_weight": "b"},
+        //                 "line2": {"left": "01/01/2025", "right": "AA", "font_size": "l", "font_weight": "b"},
+        //                 "line3": {"left": "print date: 01/01/2025 16:03:08", "right": "", "font_size": "m", "font_weight": "n"},
+        //                 "line4": {"left": "Ghassan Hallaq", "right": "", "font_size": "m", "font_weight": "n"},
+        //                 "line4": {"left": "", "right": "", "font_size": "m", "font_weight": "n"},
+        //             },
+        //             "section2": {
+        //                 "line1": {"left": "Bank Receipt", "right": "SAINV276257", "font_size": "l", "font_weight": "b"},
+        //                 "line2": {"left": "01/01/2025", "right": "AA", "font_size": "l", "font_weight": "b"},
+        //                 "line3": {"left": "print date: 01/01/2025 16:03:08", "right": "", "font_size": "m", "font_weight": "n"},
+        //                 "line4": {"left": "Ghassan Hallaq", "right": "", "font_size": "m", "font_weight": "n"},
+        //                 "line4": {"left": "", "right": "", "font_size": "m", "font_weight": "n"},
+        //             },
+        //             "section3": {
+        //                 "line1": {"left": "Bank Receipt", "right": "SAINV276257", "font_size": "l", "font_weight": "b"},
+        //                 "line2": {"left": "01/01/2025", "right": "AA", "font_size": "l", "font_weight": "b"},
+        //                 "line3": {"left": "print date: 01/01/2025 16:03:08", "right": "", "font_size": "m", "font_weight": "n"},
+        //                 "line4": {"left": "Ghassan Hallaq", "right": "", "font_size": "m", "font_weight": "n"},
+        //                 "line4": {"left": "", "right": "", "font_size": "m", "font_weight": "n"},
+        //             },
+        //         },
+        //         "footer": {
+        //             "line1": "Montant de 33.515.00 CAD est payé par interac",
+        //             "line2": "Receivable Remarque: Account Beneficiary: Nadim Hallaq",
+        //             "bank_info": {
+        //             "name": "Bank of America",
+        //             "address": "1234567890",
+        //             "account_number": "1234567890",
+        //             "branch": "67890",
+        //             "transit": "001",
+        //             "phone": "(514) 000-0000",
+        //             "footer_note": "Veuillez vérifier voter reçu et voter devise avant de quitter le comptoir.",
+        //             "merci": "Merci",
+        //         }
+        //         },
+        //     }
+        //     return printLine();
+        // }
+        // function buildClientReceipt() {
+        //     return printLine();
+        // }
+        const sampleOrder = {
+            storeName: "Joe's Coffee Shop",
+            address: "123 Main Street, Anytown, USA",
+            phone: "Tel: (555) 123-4567",
+            receiptNumber: "R001234",
+            items: [
+                { name: "Coffee - Large", quantity: 2, price: 3.50 },
+                { name: "Blueberry Muffin", quantity: 1, price: 2.25 },
+                { name: "Croissant", quantity: 1, price: 2.75 }
+            ],
+            tax: 0.85,
+            paymentMethod: "Credit Card",
+            change: 0.00,
+            qrData: "https://example.com/receipt/R001234"
+        };
+        async function printing(text) {
+            try {
+                device = await navigator.usb.requestDevice({ filters: [] });
+                await device.open();
+                await device.selectConfiguration(1);
+                await device.claimInterface(0);
+                await device.transferOut(
+                    device.configuration.interfaces[0].alternate.endpoints.find(obj => obj.direction === 'out').endpointNumber,
+                    text,
+                );
+                await device.close();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        async function printBankReceipt() {
+            text = buildBankReceipt(sampleOrder);
+            await printing(text);
+        }
+        async function printClientReceipt() {
+            text = buildClientReceipt();
+            await printing(text);
+        }
+
+    </script>
+
+</body>
+
+</html>
