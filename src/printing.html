@@ -3,14 +3,11 @@
 
 <body>
 
-    <button id="print Bank receipt" onclick="printBankReceipt()"></button>
-    <button id="print Client receipt" onclick="printClientReceipt()"></button>
+    <button id="print Bank receipt" onclick="printBankReceipt()">Print Bank receipt</button>
+    <button id="print Client receipt" onclick="printClientReceipt()">Print Client receipt</button>
 
 
     <script>
-
-
-
         let ESC = '\x1B';
         let GS = '\x1D';
         let commands = {
@@ -106,10 +103,6 @@
             receipt += 'Please come again\n';
             receipt += commands.FEED_LINE;
 
-            // QR Code (optional - if printer supports it)
-            if (orderData.qrData) {
-                receipt += generateQRCode(orderData.qrData);
-            }
 
             // Cut paper
             receipt += commands.FEED_LINE;
@@ -131,58 +124,6 @@
         }
 
 
-        // function buildBankReceipt() {
-        //     let json_data = {
-        //         "header": {
-        //             "line1": "Nour - Bureau de Change",
-        //             "line2": "1805 Rue Sauvé Ouest - Suite 105A",
-        //             "line3": "Montreal, QUEBEC, H4N3B8, CA",
-        //             "line4": "(514) 334-6502",
-        //             "line5": "www.nourexchange.ca",
-        //         },
-        //         "body": {
-        //             "section1": {
-        //                 "line1": {"left": "Bank Receipt", "right": "SAINV276257", "font_size": "l", "font_weight": "b"},
-        //                 "line2": {"left": "01/01/2025", "right": "AA", "font_size": "l", "font_weight": "b"},
-        //                 "line3": {"left": "print date: 01/01/2025 16:03:08", "right": "", "font_size": "m", "font_weight": "n"},
-        //                 "line4": {"left": "Ghassan Hallaq", "right": "", "font_size": "m", "font_weight": "n"},
-        //                 "line4": {"left": "", "right": "", "font_size": "m", "font_weight": "n"},
-        //             },
-        //             "section2": {
-        //                 "line1": {"left": "Bank Receipt", "right": "SAINV276257", "font_size": "l", "font_weight": "b"},
-        //                 "line2": {"left": "01/01/2025", "right": "AA", "font_size": "l", "font_weight": "b"},
-        //                 "line3": {"left": "print date: 01/01/2025 16:03:08", "right": "", "font_size": "m", "font_weight": "n"},
-        //                 "line4": {"left": "Ghassan Hallaq", "right": "", "font_size": "m", "font_weight": "n"},
-        //                 "line4": {"left": "", "right": "", "font_size": "m", "font_weight": "n"},
-        //             },
-        //             "section3": {
-        //                 "line1": {"left": "Bank Receipt", "right": "SAINV276257", "font_size": "l", "font_weight": "b"},
-        //                 "line2": {"left": "01/01/2025", "right": "AA", "font_size": "l", "font_weight": "b"},
-        //                 "line3": {"left": "print date: 01/01/2025 16:03:08", "right": "", "font_size": "m", "font_weight": "n"},
-        //                 "line4": {"left": "Ghassan Hallaq", "right": "", "font_size": "m", "font_weight": "n"},
-        //                 "line4": {"left": "", "right": "", "font_size": "m", "font_weight": "n"},
-        //             },
-        //         },
-        //         "footer": {
-        //             "line1": "Montant de 33.515.00 CAD est payé par interac",
-        //             "line2": "Receivable Remarque: Account Beneficiary: Nadim Hallaq",
-        //             "bank_info": {
-        //             "name": "Bank of America",
-        //             "address": "1234567890",
-        //             "account_number": "1234567890",
-        //             "branch": "67890",
-        //             "transit": "001",
-        //             "phone": "(514) 000-0000",
-        //             "footer_note": "Veuillez vérifier voter reçu et voter devise avant de quitter le comptoir.",
-        //             "merci": "Merci",
-        //         }
-        //         },
-        //     }
-        //     return printLine();
-        // }
-        // function buildClientReceipt() {
-        //     return printLine();
-        // }
         const sampleOrder = {
             storeName: "Joe's Coffee Shop",
             address: "123 Main Street, Anytown, USA",
@@ -198,15 +139,19 @@
             change: 0.00,
             qrData: "https://example.com/receipt/R001234"
         };
+        
         async function printing(text) {
+            let text_array = new Uint8Array(text.split('').map(char => char.charCodeAt(0)))
+            console.log(text_array);
             try {
                 device = await navigator.usb.requestDevice({ filters: [] });
+                console.log(device);
                 await device.open();
                 await device.selectConfiguration(1);
                 await device.claimInterface(0);
                 await device.transferOut(
                     device.configuration.interfaces[0].alternate.endpoints.find(obj => obj.direction === 'out').endpointNumber,
-                    text,
+                    text_array,
                 );
                 await device.close();
             } catch (error) {
@@ -215,6 +160,7 @@
         }
         async function printBankReceipt() {
             text = buildBankReceipt(sampleOrder);
+            console.log(text);
             await printing(text);
         }
         async function printClientReceipt() {
