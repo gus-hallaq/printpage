@@ -5,11 +5,10 @@
 
     <button id="print Bank receipt" onclick="printBankReceipt()">Print Bank receipt</button>
     <button id="print Client receipt" onclick="printClientReceipt()">Print Client receipt</button>
-
-
     <script>
         let ESC = '\x1B';
         let GS = '\x1D';
+        let device = undefined;
         let commands = {
             INIT: '\x1B\x40',           // Init the printer
             FEED_LINE: '\x0A',          // Line feed
@@ -139,13 +138,16 @@
             change: 0.00,
             qrData: "https://example.com/receipt/R001234"
         };
-        
+
         async function printing(text) {
             let text_array = new Uint8Array(text.split('').map(char => char.charCodeAt(0)))
             console.log(text_array);
             try {
-                device = await navigator.usb.requestDevice({ filters: [] });
                 console.log(device);
+                if (device === undefined) {
+                    device = await navigator.usb.requestDevice({ filters: [] });
+                    console.log(device);
+                }
                 await device.open();
                 await device.selectConfiguration(1);
                 await device.claimInterface(0);
@@ -155,7 +157,7 @@
                 );
                 await device.close();
             } catch (error) {
-                alert('Error: ' + error.message);
+                console.error(error);
             }
         }
         async function printBankReceipt() {
