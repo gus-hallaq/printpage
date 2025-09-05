@@ -145,7 +145,7 @@
             try {
                 console.log(device);
                 if (device === undefined) {
-                    device = await navigator.usb.requestDevice({ filters: [] });
+                    device = await navigator.usb.requestDevice({ filters: [{ vendorId: 1208 }] });
                     console.log(device);
                 }
                 await device.open();
